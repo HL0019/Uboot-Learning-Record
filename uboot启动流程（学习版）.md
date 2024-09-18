@@ -537,7 +537,7 @@ static int abortboot_single_key(int bootdelay)
 - **倒计时的具体实现；**
 - **判断键盘是否有按下，也就是是否打断了倒计时，如果键盘按下的话就执行相应的分支。比如设置abort为 1，设置 bootdelay为0等，最后跳出倒计时循环；**
 - **返回abort的值，如果倒计时自然结束，没有被打断abort就为0，否则的话abort的值就为 1；**
-- **在autoboot_command函数中，如果倒计时自然结束那么就执行函数run_command_list，此函数会执行参数s指定的一系列命令，也就是环境变量bootcmd的命令，bootcmd里面保存着默认的启动命令，因此linux内核启动！**
+- <u>**在autoboot_command函数中，如果倒计时自然结束那么就执行函数run_command_list，此函数会执行参数s指定的一系列命令，也就是环境变量bootcmd的命令，bootcmd里面保存着默认的启动命令，因此linux内核启动！*</u>*
 
 ***
 
@@ -545,22 +545,3 @@ static int abortboot_single_key(int bootdelay)
 
 ***
 
-
-
-## （2）uboot的设备树可以合并到kernel？？？？
-
-## （3）uboot bootargs如何传递给内核？？？？
-
-## （4）kernel的dts里面的chosen有效还是uboot的bootargs有效？？？？
-
-## （5）如果均有效如何合并的？？？？
-
-## （6）如果定义两个重复的键 不同的值 谁的优先级高 谁覆盖谁？？？？
-
-## （顺便也把存储设备分区（基本都是gpt分区）搞清楚）
-
-## （7）fat分区 ext分区和gpt分区关系 谁是大哥？？？？
-
-## （8）uboot的booti bootm bootfit命令启动的区别 内核的Image.itb zImage Image Image.gz镜像区别？？？？
-
-## （9）initramfs的作用 如何生成 不用initramfs可不可以启动系统？？？？

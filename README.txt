@@ -2,3 +2,6 @@
 	介于上次启动流程用文字介绍的太草率，本次通过uboot源码来进行分析（cpu_init_crit函数还没有分析）
 2024-9-18
 	uboot底层代码流程大致分析完毕，梳理了uboot是怎么去启动内核的。
+2024-9-19 
+	新建文档 uboot-problem-analysis.md 用来分析uboot的环境变量
+	（1）首先分析bootcmd bootargs环境变量（开个头）
