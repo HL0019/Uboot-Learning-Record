@@ -351,7 +351,201 @@ ENDPROC(cpu_init_cp15)
 
 
 
-  
+## （五）**cpu_init_crit函数讲解**
+
+~~~
+ENTRY(cpu_init_crit)
+    /*
+     * Jump to board specific initialization...
+     * The Mask ROM will have already initialized
+     * basic memory. Go here to bump up clock rate and handle
+     * wake up conditions.
+     */
+    b   lowlevel_init       @ go setup pll,mux,memory
+ENDPROC(cpu_init_crit)
+#endif
+~~~
+
+**可以看到函数cpu_init_crit内部又只是一句跳转语句，调用了函数lowlevel_init，接下来就是详细的分析一下lowlevel_init和_main这两个函数。**
+
+（具体作用以后再看吧）
+
+ 
+
+## **（六）_main函数详解** 
+
+...........
+
+## **run_main_loop函数详解**
+
+**run_main_loop函数，在common/board_r.c文件定义，具体代码如下；**
+
+~~~
+static int run_main_loop(void)
+{
+#ifdef CONFIG_SANDBOX
+    sandbox_main_loop_init();
+#endif
+    /* main_loop() can return to retry autoboot, if so just run it again */
+    for (;;)
+        main_loop();
+    return 0;
+}
+~~~
+
+**uboot启动以后会进入3秒倒计时，如果在3秒倒计时结束之前按下按下回车键，那么就会进入uboot的命令模式，如果倒计时结束以后都没有按下回车键，那么就会自动启动Linux内核，这个功能就是由run_main_loop函数来完成的。 main_loop函数，在common/main.c文件中定义，具体代码如下；**
+
+~~~
+/* We come here after U-Boot is initialised and ready to process commands */
+void main_loop(void)
+{
+    const char *s;
+	/* 打印出启动进度 */
+    bootstage_mark_name(BOOTSTAGE_ID_MAIN_LOOP, "main_loop");
+
+    if (IS_ENABLED(CONFIG_VERSION_VARIABLE))
+        env_set("ver", version_string);  /* set version variable */
+
+    cli_init();
+
+    if (IS_ENABLED(CONFIG_USE_PREBOOT))
+        run_preboot_environment_command();
+
+    if (IS_ENABLED(CONFIG_UPDATE_TFTP))
+        update_tftp(0UL, NULL, NULL);
+
+    if (IS_ENABLED(CONFIG_EFI_CAPSULE_ON_DISK_EARLY)) {
+        /* efi_init_early() already called */
+        if (efi_init_obj_list() == EFI_SUCCESS)
+            efi_launch_capsules();
+    }
+
+    s = bootdelay_process();
+    if (cli_process_fdt(&s))
+        cli_secure_boot_cmd(s);
+
+    autoboot_command(s);
+
+    cli_loop();
+    panic("No CLI available");
+}
+~~~
+
+
+
+* **调用bootstage_mark_name函数，打印出启动进度**
+* **如果宏CONFIG_VERSION_VARIABLE定义了就会执行函数setenv，设置换将变量ver的值为version_string，也就是设置版本号环境变量；**
+* **调用cli_init函数，初始化hushshell相关的变量**
+* **调用bootdelay_process函数，此函数会读取环境变量bootdelay和bootcmd的内容，然后将bootdelay的值赋值给全局变量stored_bootdelay，返回值为环境变量bootcmd的值。**
+* **autoboot_command函数，此函数就是检查倒计时是否结束？倒计时结束之前有没有被打断？在文件common/autoboot.c文件中定义，具体代码如下:**
+
+~~~
+void autoboot_command(const char *s)
+{
+    debug("### main_loop: bootcmd=\"%s\"\n", s ? s : "<UNDEFINED>");
+
+    if (s && (stored_bootdelay == -2 ||
+         (stored_bootdelay != -1 && !abortboot(stored_bootdelay)))) {
+        bool lock;
+        int prev;
+
+        lock = autoboot_keyed() &&
+            !IS_ENABLED(CONFIG_AUTOBOOT_KEYED_CTRLC);
+        if (lock)
+            prev = disable_ctrlc(1); /* disable Ctrl-C checking */
+
+        run_command_list(s, -1, 0);
+
+        if (lock)
+            disable_ctrlc(prev);    /* restore Ctrl-C checking */
+    }
+
+    if (IS_ENABLED(CONFIG_AUTOBOOT_USE_MENUKEY) &&
+        menukey == AUTOBOOT_MENUKEY) {
+        s = env_get("menucmd");
+        if (s)
+            run_command_list(s, -1, 0);
+    }
+}
+~~~
+
+
+
+#### 最后就是abortboot函数，在文件common/autoboot.c文件中定义，具体代码如下：
+
+~~~
+if (autoboot_keyed())
+	abort = abortboot_key_sequence(bootdelay);
+else
+	abort = abortboot_single_key(bootdelay);
+}
+
+if (IS_ENABLED(CONFIG_SILENT_CONSOLE) && abort)
+	gd->flags &= ~GD_FLG_SILENT;
+return abort;
+}
+~~~
+
+在倒计时结束之前有按键按下则执行函数 abortboot_single_key，abortboot_single_key函数在common/autoboot.c文件中定义，具体代码如下；
+
+~~~
+static int abortboot_single_key(int bootdelay)
+{
+    int abort = 0;
+    unsigned long ts;
+
+    printf("Hit any key to stop autoboot: %2d ", bootdelay);
+
+    /*
+     * Check if key already pressed
+     */
+    if (tstc()) {   /* we got a key press   */
+        getchar();  /* consume input    */
+        puts("\b\b\b 0");
+        abort = 1;  /* don't auto boot  */
+    }
+
+    while ((bootdelay > 0) && (!abort)) {
+        --bootdelay;
+        /* delay 1000 ms */
+        ts = get_timer(0);
+        do {
+            if (tstc()) {   /* we got a key press   */
+                int key;
+
+                abort  = 1; /* don't auto boot  */
+                bootdelay = 0;  /* no more delay    */
+                key = getchar();/* consume input    */
+                if (IS_ENABLED(CONFIG_AUTOBOOT_USE_MENUKEY))
+                    menukey = key;
+                break;
+            }
+            udelay(10000);
+        } while (!abort && get_timer(ts) < 1000);
+
+        printf("\b\b\b%2d ", bootdelay);
+    }
+
+    putc('\n');
+
+    return abort;
+}
+~~~
+
+**abortboot_single_key函数主要工作：**
+
+- **倒计时的具体实现；**
+- **判断键盘是否有按下，也就是是否打断了倒计时，如果键盘按下的话就执行相应的分支。比如设置abort为 1，设置 bootdelay为0等，最后跳出倒计时循环；**
+- **返回abort的值，如果倒计时自然结束，没有被打断abort就为0，否则的话abort的值就为 1；**
+- **在autoboot_command函数中，如果倒计时自然结束那么就执行函数run_command_list，此函数会执行参数s指定的一系列命令，也就是环境变量bootcmd的命令，bootcmd里面保存着默认的启动命令，因此linux内核启动！**
+
+***
+
+***
+
+***
+
+
 
 ## （2）uboot的设备树可以合并到kernel？？？？
 
