@@ -5,3 +5,7 @@
 2024-9-19 
 	新建文档 uboot-problem-analysis.md 用来分析uboot的环境变量
 	（1）首先分析bootcmd bootargs环境变量（开个头）
+2024-9-23
+	bootcmd的修改方式以及bootargs环境变量参数的含义
+2024-9-24
+	补充bootcmd以及bootargs环境变量参数的含义
