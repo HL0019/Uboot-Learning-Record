@@ -205,32 +205,4 @@ ifdef  CONFIG_BOOTARGS
 
 以上就是当下阶段对于bootcmd和bootargs的理解，下面将说一下uboot的几种枪方式的区别~~~~
 
-***
-
-
-
-
-
-
-
-***
-
-## #   uboot的设备树可以合并到kernel？？？？
-
-## #   uboot bootargs如何传递给内核？？？？
-
-## #   kernel的dts里面的chosen有效还是uboot的bootargs有效？？？？
-
-## #   如果均有效如何合并的？？？？
-
-## #   如果定义两个重复的键 不同的值 谁的优先级高 谁覆盖谁？？？？
-
-##   （顺便也把存储设备分区（基本都是gpt分区）搞清楚）
-
-## #   fat分区 ext分区和gpt分区关系 谁是大哥？？？？
-
-## #   uboot的booti bootm bootfit命令启动的区别 内核的Image.itb zImage          	Image Image.gz镜像区别？？？？
-
-## #   initramfs的作用 如何生成 不用initramfs可不可以启动系统？？？？
-
  

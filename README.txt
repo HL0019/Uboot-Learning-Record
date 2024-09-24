@@ -9,3 +9,4 @@
 	bootcmd的修改方式以及bootargs环境变量参数的含义
 2024-9-24
 	补充bootcmd以及bootargs环境变量参数的含义
+	增加uboot-start-mode文档，记录uboot的几种启动方式
